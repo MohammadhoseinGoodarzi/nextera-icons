@@ -1,10 +1,7 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import * as fs from "fs";
+import * as path from "path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// Since CommonJS provides __dirname and __filename out of the box
 const iconsDir = path.resolve(__dirname, "../../src/icons");
 const componentsDir = path.resolve(__dirname, "../../src/components");
 const typesDir = path.resolve(__dirname, "../../src/types");
