@@ -1,10 +1,15 @@
 const path = require("path");
+const glob = require("glob");
 
 module.exports = {
-  entry: "./src/components/index.tsx",
+  entry: glob.sync("./src/components/*.tsx").reduce((entries, file) => {
+    const entry = path.basename(file, path.extname(file));
+    entries[entry] = file;
+    return entries;
+  }, {}),
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "index.js",
+    path: path.resolve(__dirname, "dist/components"),
+    filename: "[name].js",
     libraryTarget: "commonjs2",
   },
   resolve: {

@@ -3,10 +3,15 @@ import * as path from "path";
 
 const iconsDir = path.resolve(__dirname, "../../src/icons");
 const componentsDir = path.resolve(__dirname, "../../src/components");
-const typesDir = path.resolve(__dirname, "../../src/types");
+const distComponentsDir = path.resolve(__dirname, "../../dist/components");
+const typesDir = path.resolve(__dirname, "../../dist/types");
 
 if (!fs.existsSync(componentsDir)) {
   fs.mkdirSync(componentsDir, { recursive: true });
+}
+
+if (!fs.existsSync(distComponentsDir)) {
+  fs.mkdirSync(distComponentsDir, { recursive: true });
 }
 
 if (!fs.existsSync(typesDir)) {
@@ -30,6 +35,10 @@ svgFiles.forEach((file) => {
   const svgContent = fs.readFileSync(path.join(iconsDir, file), "utf-8");
   const componentName = `${toCamelCase(path.basename(file, ".svg"))}`;
   const componentPath = path.join(componentsDir, `${componentName}.tsx`);
+  const distComponentPath = path.join(
+    distComponentsDir,
+    `${componentName}.d.ts`
+  );
 
   // Find all fill attributes and replace from the second to the last one
   const fillMatches = [...svgContent.matchAll(/fill="[^"]*"/g)];
@@ -38,7 +47,7 @@ svgFiles.forEach((file) => {
     fillMatches.slice(1).forEach((match) => {
       updatedSvgContent = updatedSvgContent.replace(
         match[0],
-        'fill={props.fill || "currentColor"}'
+        'fill={ props.fill || "currentColor"}'
       );
     });
   }
@@ -61,30 +70,27 @@ export default ${componentName};
 
   fs.writeFileSync(componentPath, componentTemplate, "utf-8");
 
+  // Add to type declarations
   typeDeclarations.push(
     `export const ${componentName}: React.FC<React.SVGProps<SVGSVGElement>>;`
   );
+
+  // Generate corresponding type declaration
+  const typeTemplate = `
+import { FC, SVGProps } from 'react';
+
+declare const ${componentName}: FC<SVGProps<SVGSVGElement>>;
+export default ${componentName};
+`;
+
+  fs.writeFileSync(distComponentPath, typeTemplate, "utf-8");
 });
 
-// Generate index.tsx for exporting all icons
-const exportStatements = svgFiles
-  .map((file) => {
-    const componentName = `${toCamelCase(path.basename(file, ".svg"))}`;
-    return `export { default as ${componentName} } from './${componentName}';`;
-  })
-  .join("\n");
-
-fs.writeFileSync(
-  path.join(componentsDir, "index.tsx"),
-  exportStatements,
-  "utf-8"
-);
-
-// Generate types for all icons
+// Generate index.d.ts for all icons
 const typesTemplate = `
 import { FC, SVGProps } from 'react';
 
-declare module 'nextera-icon-package' {
+declare module 'nextera-icon-package/dist/components' {
   ${typeDeclarations.join("\n")}
 }
 `;
