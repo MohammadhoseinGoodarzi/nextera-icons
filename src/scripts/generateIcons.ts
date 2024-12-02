@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
 
-// Since CommonJS provides __dirname and __filename out of the box
 const iconsDir = path.resolve(__dirname, "../../src/icons");
 const componentsDir = path.resolve(__dirname, "../../src/components");
 const typesDir = path.resolve(__dirname, "../../src/types");
@@ -14,7 +13,14 @@ if (!fs.existsSync(typesDir)) {
   fs.mkdirSync(typesDir, { recursive: true });
 }
 
-const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+// Function to convert a string to camelCase and capitalize the first letter
+const toCamelCase = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) =>
+      index === 0 ? match.toUpperCase() : match.toUpperCase()
+    )
+    .replace(/\s+/g, "");
 
 const svgFiles = fs.readdirSync(iconsDir);
 
@@ -22,14 +28,32 @@ const typeDeclarations: string[] = [];
 
 svgFiles.forEach((file) => {
   const svgContent = fs.readFileSync(path.join(iconsDir, file), "utf-8");
-  const componentName = `${capitalize(path.basename(file, ".svg"))}Icon`;
+  const componentName = `${toCamelCase(path.basename(file, ".svg"))}`;
   const componentPath = path.join(componentsDir, `${componentName}.tsx`);
+
+  // Find all fill attributes and replace from the second to the last one
+  const fillMatches = [...svgContent.matchAll(/fill="[^"]*"/g)];
+  let updatedSvgContent = svgContent;
+  if (fillMatches.length > 1) {
+    fillMatches.slice(1).forEach((match) => {
+      updatedSvgContent = updatedSvgContent.replace(
+        match[0],
+        'fill={props.fill || "currentColor"}'
+      );
+    });
+  }
+
+  updatedSvgContent = updatedSvgContent
+    .replace(/<svg/, "<svg {...props}")
+    .replace(/clip-path/, "clipPath")
+    .replace(/fill-rule/, "fillRule")
+    .replace(/clip-rule/, "clipRule");
 
   const componentTemplate = `
 import React from 'react';
 
 const ${componentName}: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  ${svgContent.replace(/<svg/, "<svg {...props}")}
+  ${updatedSvgContent}
 );
 
 export default ${componentName};
@@ -45,7 +69,7 @@ export default ${componentName};
 // Generate index.tsx for exporting all icons
 const exportStatements = svgFiles
   .map((file) => {
-    const componentName = `${capitalize(path.basename(file, ".svg"))}Icon`;
+    const componentName = `${toCamelCase(path.basename(file, ".svg"))}`;
     return `export { default as ${componentName} } from './${componentName}';`;
   })
   .join("\n");

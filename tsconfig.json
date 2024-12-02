@@ -3,11 +3,16 @@
     "target": "esnext",
     "module": "commonjs",
     "moduleResolution": "node",
+    "jsx": "react",
     "esModuleInterop": true,
     "strict": false,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationDir": "dist/types", // Separate directory for declaration files
+    "outDir": "dist", // Output directory for compiled files
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/scripts/generateIcons.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }
